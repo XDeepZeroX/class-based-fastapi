@@ -31,6 +31,10 @@ class ExampleRoutableChildren(Routable):
     async def overridable_method(self) -> int:
         return self._injected + 1
 
+    @get(path='/{module}/1/get')
+    async def template_1_method(self) -> int:
+        return self._injected + 1
+
 
 class ExampleRoutableParent(ExampleRoutableChildren):
     NAME_MODULE = 'Test'
@@ -50,6 +54,10 @@ class ExampleRoutableParent(ExampleRoutableChildren):
     @get(path='/{module}/get')
     async def template3_method(self) -> int:
         return self._injected + 102
+
+    @get(path='')
+    async def template4_method(self) -> int:
+        return self._injected + 103
 
 
 def test_routes_respond() -> None:
@@ -224,3 +232,11 @@ def test_base_template() -> None:
     response = client.get('/test/get')
     assert response.status_code == 200
     assert response.text == '{}'.format(n + 102)
+
+    response = client.get('/test/example-routable-parent/v1.0')
+    assert response.status_code == 200
+    assert response.text == '{}'.format(n + 103)
+
+    response = client.get('/1/get')
+    assert response.status_code == 200
+    assert response.text == '{}'.format(n + 1)

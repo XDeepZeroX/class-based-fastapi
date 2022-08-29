@@ -1,7 +1,7 @@
 import dataclasses
 import inspect
 from functools import partial
-from typing import Any, Callable, Dict, List, Tuple, Type, TypeVar, cast, Union
+from typing import Any, Callable, Dict, List, Tuple, Type, TypeVar, cast
 
 from fastapi.routing import APIRouter
 
@@ -16,8 +16,7 @@ class RoutableMeta(type):
     class member called _endpoints that the Routable constructor then uses to add the endpoints to its router."""
 
     @staticmethod
-    def _compute_path(template: str, name: str, bases: Tuple[Type[Any]], attrs: Dict[str, Any]) -> Union[
-        str, ValueError]:
+    def _compute_path(template: str, name: str, bases: Tuple[Type[Any]], attrs: Dict[str, Any]) -> str:
         """Формирование шаблона URI
 
         Args:
@@ -34,20 +33,15 @@ class RoutableMeta(type):
 
         name_module = attrs.get('NAME_MODULE', '') or bases[0].NAME_MODULE
         if '{module}' in template and (name_module is None or name_module == ''):
-            raise ValueError(
-                """'NAME_MODULE' is null or empty
-                            
-                Try:    
-                    class ParentUserRoutes(UserRoutes):
-                        NAME_MODULE = 'NAME_MODULE'
-                """
-            )
+            template = template.replace('/{module}', '')
 
         path = template \
             .replace('{module}', snake_case(name_module)) \
             .replace('{version}', attrs.get('VERSION_API') or bases[0].VERSION_API) \
             .replace('{controller}', snake_case(name))
         print(path)
+        if str.endswith(path, '/'):
+            return path[:-1]
         return path
 
     def __new__(cls: Type[type], name: str, bases: Tuple[Type[Any]], attrs: Dict[str, Any]) -> 'RoutableMeta':
