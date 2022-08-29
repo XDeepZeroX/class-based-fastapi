@@ -1,0 +1,11 @@
+[flake8]
+exclude = .git,__pycache__,env,venv,.idea
+max-line-length = 150
+max-complexity = 8
+import-order-style = google
+ignore = ANN101,
+    # D100 Missing docstring in public module
+    D100,
+    D107,
+    # newspaper style: function clear_backup defined in line 148 should be moved down
+    NEWS100,
