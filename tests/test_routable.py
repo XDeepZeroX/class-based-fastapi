@@ -27,15 +27,29 @@ class ExampleRoutableChildren(Routable):
     async def aecho(self, val: str) -> str:
         return f'{val} {self._injected}'
 
-    @get(path='/base-method')
+    @get(path='/{version}/base-method')
     async def overridable_method(self) -> int:
         return self._injected + 1
 
 
 class ExampleRoutableParent(ExampleRoutableChildren):
+    NAME_MODULE = 'Test'
+
     @get(path='/override-base-method')
     async def overridable_method(self) -> int:
         return self._injected + 2
+
+    @get(path='get')
+    async def template1_method(self) -> int:
+        return self._injected + 100
+
+    @get(path='/{controller}/get')
+    async def template2_method(self) -> int:
+        return self._injected + 101
+
+    @get(path='/{module}/get')
+    async def template3_method(self) -> int:
+        return self._injected + 102
 
 
 def test_routes_respond() -> None:
@@ -186,3 +200,27 @@ def test_override_method_work_parent() -> None:
     response = client.get('/override-base-method')
     assert response.status_code == 200
     assert response.text == '{}'.format(n + 2)
+
+
+def test_base_template() -> None:
+    app = FastAPI()
+    n = 10000
+    t = ExampleRoutableParent(n)
+    app.include_router(t.router)
+
+    client = TestClient(app)
+
+    response = client.get('/get')
+    assert response.status_code == 404
+
+    response = client.get('/test/example-routable-parent/v1.0/get')
+    assert response.status_code == 200
+    assert response.text == '{}'.format(n + 100)
+
+    response = client.get('/example-routable-parent/get')
+    assert response.status_code == 200
+    assert response.text == '{}'.format(n + 101)
+
+    response = client.get('/test/get')
+    assert response.status_code == 200
+    assert response.text == '{}'.format(n + 102)
