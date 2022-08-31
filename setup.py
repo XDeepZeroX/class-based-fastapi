@@ -15,7 +15,7 @@ def load_requirements(fname: str) -> list:
 
 setup(
     name='class-based-fastapi',
-    version='0.1.5',
+    version='0.1.6',
     author='XDeepZeroX',
     license='MIT',
     description='Class based routing for FastAPI',
