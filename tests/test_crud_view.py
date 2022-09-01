@@ -9,12 +9,14 @@ def response_(n: int) -> str:
     return f'Ok {n}'
 
 
-_NAME_MODULE = 'TestView'
-_REST_NAME_MODULE = 'test-view'
+_NAME_MODULE_CHILDREN = 'TestView'
+_REST_NAME_MODULE_CHILDREN = 'test-view'
+_NAME_MODULE_PARENT = 'Parent'
+_REST_NAME_MODULE_PARENT = 'parent'
 
 
 class ExampleRoutableChildren(Routable):
-    NAME_MODULE = _NAME_MODULE
+    NAME_MODULE = _NAME_MODULE_CHILDREN
 
     def __init__(self, injected: int) -> None:
         super().__init__()
@@ -42,32 +44,33 @@ class ExampleRoutableChildren(Routable):
 
 
 class ExampleRoutableParent(ExampleRoutableChildren):
-    pass
+    NAME_MODULE = _NAME_MODULE_PARENT
+    VERSION_API = '1.1'
 
 
-def requests(client, status: int, controller: str, response_: str = None):
+def requests(client, status: int, module: str, controller: str, version: str = '1.0', response_: str = None):
 
-    response = client.get(f'{_REST_NAME_MODULE}/{controller}/v1.0/100')
+    response = client.get(f'{module}/{controller}/v{version}/100')
     assert response.status_code == status
     if response_ is not None:
         assert response.text == response_
 
-    response = client.delete(f'{_REST_NAME_MODULE}/{controller}/v1.0/100')
+    response = client.delete(f'{module}/{controller}/v{version}/100')
     assert response.status_code == status
     if response_ is not None:
         assert response.text == response_
 
-    response = client.post(f'{_REST_NAME_MODULE}/{controller}/v1.0')
+    response = client.post(f'{module}/{controller}/v{version}')
     assert response.status_code == status
     if response_ is not None:
         assert response.text == response_
 
-    response = client.put(f'{_REST_NAME_MODULE}/{controller}/v1.0')
+    response = client.put(f'{module}/{controller}/v{version}')
     assert response.status_code == status
     if response_ is not None:
         assert response.text == response_
 
-    response = client.patch(f'{_REST_NAME_MODULE}/{controller}/v1.0/100')
+    response = client.patch(f'{module}/{controller}/v{version}/100')
     assert response.status_code == status
     if response_ is not None:
         assert response.text == response_
@@ -84,11 +87,11 @@ def test_inheritance_routes_children() -> None:
     resp = response_(n)
 
     # Children
-    requests(client, 200, 'example-routable-children', resp)
+    requests(client, 200, _REST_NAME_MODULE_CHILDREN, 'example-routable-children', response_=resp)
 
     ## Parent
 
-    requests(client, 404, 'example-routable-parent')
+    requests(client, 404, _REST_NAME_MODULE_PARENT, 'example-routable-parent', version='1.1')
 
 
 def test_inheritance_routes_parent() -> None:
@@ -102,11 +105,11 @@ def test_inheritance_routes_parent() -> None:
     resp = response_(n)
 
     # Children
-    requests(client, 404, 'example-routable-children')
+    requests(client, 404, _REST_NAME_MODULE_CHILDREN, 'example-routable-children')
 
     ## Parent
 
-    requests(client, 200, 'example-routable-parent', resp)
+    requests(client, 200, _REST_NAME_MODULE_PARENT, 'example-routable-parent', response_=resp, version='1.1')
 
 
 def test_inheritance_routes() -> None:
@@ -122,8 +125,8 @@ def test_inheritance_routes() -> None:
     resp = response_(n)
 
     # Children
-    requests(client, 200, 'example-routable-children', resp)
+    requests(client, 200, _REST_NAME_MODULE_CHILDREN, 'example-routable-children', response_=resp)
 
     ## Parent
 
-    requests(client, 200, 'example-routable-parent', resp)
+    requests(client, 200, _REST_NAME_MODULE_PARENT, 'example-routable-parent', response_=resp, version='1.1')

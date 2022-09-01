@@ -7,7 +7,7 @@ from typing import Any, Callable, Dict, List, Tuple, Type, TypeVar, cast
 from fastapi.routing import APIRouter
 
 from .route_args import EndpointDefinition
-from .utilities import snake_case
+from .templates_formatting import _rest_api_naming, _processing_child_paths
 
 AnyCallable = TypeVar('AnyCallable', bound=Callable[..., Any])
 
@@ -15,17 +15,6 @@ AnyCallable = TypeVar('AnyCallable', bound=Callable[..., Any])
 class RoutableMeta(type):
     """This is a meta-class that converts all the methods that were marked by a route/path decorator into values on a
     class member called _endpoints that the Routable constructor then uses to add the endpoints to its router."""
-
-    @staticmethod
-    def _rest_api_naming(name: str) -> str:
-        """Преобразование наименования API
-
-        Args:
-            name: Исходное название
-
-        Returns: Преобразованное название
-        """
-        return snake_case(name)
 
     @staticmethod
     def _compute_path(endpoint: EndpointDefinition, name: str, bases: Tuple[Type[Any]], attrs: Dict[str, Any]) -> str:
@@ -49,37 +38,25 @@ class RoutableMeta(type):
         if '{module}' in template and (name_module is None or name_module == ''):
             template = template.replace('/{module}', '')
 
+        # Template
+        if str.endswith(template, '/'):
+            template = template[:-1]
         endpoint.args.template_path = template
 
+        # Name module
+        name_module = _rest_api_naming(name_module)
+        endpoint.args.name_module = name_module
+
+        # Version
+        varsion_api = str.lower(attrs.get('VERSION_API') or bases[0].VERSION_API)
+        endpoint.args.varsion_api = varsion_api
+
+        # Replacement
         path = template \
-            .replace('{module}', RoutableMeta._rest_api_naming(name_module)) \
-            .replace('{version}', attrs.get('VERSION_API') or bases[0].VERSION_API) \
-            .replace('{controller}', RoutableMeta._rest_api_naming(name))
-        # print(path)
-        if str.endswith(path, '/'):
-            return path[:-1]
+            .replace('{module}', name_module) \
+            .replace('{version}', varsion_api) \
+            .replace('{controller}', _rest_api_naming(name))
         return path
-
-    @staticmethod
-    def _processing_child_paths(endpoints: Dict[str, Any], name: str, bases: Tuple[Type[Any]]) -> Dict[str, Any]:
-        for base in bases:
-            for endpoint in endpoints.values():
-                old_name = Routable._rest_api_naming(base.__name__)
-                new_name = Routable._rest_api_naming(name)
-
-                template_path = endpoint.args.template_path
-                indx_mask = template_path.find('{controller}')
-                if indx_mask == -1:
-                    continue
-
-                # len('{controller}') -> 12
-                mask = f'{template_path[indx_mask - 1]}{old_name}{template_path[indx_mask + 12]}'
-                new_mask = f'{template_path[indx_mask - 1]}{new_name}{template_path[indx_mask + 12]}'
-
-                endpoint.args.path = endpoint.args.path.replace(mask, new_mask)
-
-                # print(endpoint.args.path)
-        return endpoints
 
     def __new__(cls: Type[type], name: str, bases: Tuple[Type[Any]], attrs: Dict[str, Any]) -> 'RoutableMeta':
         endpoints: dict[str, EndpointDefinition] = {}
@@ -103,10 +80,10 @@ class RoutableMeta(type):
             if isinstance(_endpoints, dict):
                 base_endpoints.update(copy.deepcopy(_endpoints))
 
-        attrs['_endpoints'] = cls._processing_child_paths({**base_endpoints, **endpoints}, name, bases)
+        attrs['_endpoints'] = _processing_child_paths({**base_endpoints, **endpoints}, name, bases, attrs)
 
-        for endpoint in attrs['_endpoints'].values():
-            print(endpoint.args.path)
+        # for endpoint in attrs['_endpoints'].values():
+        #     print(endpoint.args.path)
 
         return cast(RoutableMeta, type.__new__(cls, name, bases, attrs))
 

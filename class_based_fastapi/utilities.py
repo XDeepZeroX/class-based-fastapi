@@ -11,3 +11,5 @@ def snake_case(string: str, separator: str = '-') -> str:
     if separator != '_':
         case = case.replace('$*-$%', separator)
     return case
+
+
