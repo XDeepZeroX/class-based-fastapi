@@ -76,6 +76,8 @@ class RoutableMeta(type):
 
         base_endpoints = {}
         for base in bases:
+            if not hasattr(base, '_endpoints'):
+                continue
             _endpoints = getattr(base, '_endpoints')
             if isinstance(_endpoints, dict):
                 base_endpoints.update(copy.deepcopy(_endpoints))
