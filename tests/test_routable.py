@@ -4,18 +4,17 @@ from fastapi.testclient import TestClient
 
 from class_based_fastapi.decorators import get, post
 from class_based_fastapi.routable import Routable
+from tests.utilities import check_api_methods
 
 
-class ExampleRoutableChildren(Routable):
-    def __init__(self, injected: int) -> None:
-        super().__init__()
-        self._injected = injected
+class ExampleRoutableChildren1(Routable):
+    _injected = 1
 
-    @get(path='/add/{x}')
+    @get(path='/add/{x:int}')
     def add(self, x: int) -> int:
         return x + self._injected
 
-    @post(path='/sub/{x}')
+    @post(path='/sub/{x:int}')
     def sub(self, x: int) -> int:
         return x - self._injected
 
@@ -36,7 +35,7 @@ class ExampleRoutableChildren(Routable):
         return self._injected + 1
 
 
-class ExampleRoutableParent(ExampleRoutableChildren):
+class ExampleRoutableParent1(ExampleRoutableChildren1):
     NAME_MODULE = 'Test'
 
     @get(path='/override-base-method')
@@ -45,41 +44,43 @@ class ExampleRoutableParent(ExampleRoutableChildren):
 
     @get(path='get')
     async def template1_method(self) -> int:
-        return self._injected + 100
+        return self._injected + 2
 
     @get(path='/{controller}/get')
     async def template2_method(self) -> int:
-        return self._injected + 101
+        return self._injected + 2
 
     @get(path='/{module}/get')
     async def template3_method(self) -> int:
-        return self._injected + 102
+        return self._injected + 2
 
     @get(path='')
     async def template4_method(self) -> int:
-        return self._injected + 103
+        return self._injected + 2
 
 
 def test_routes_respond() -> None:
     app = FastAPI()
-    t = ExampleRoutableChildren(2)
-    app.include_router(t.router)
+    t = ExampleRoutableChildren1
+    app.include_router(t.routes())
+
+    check_api_methods(app)
 
     client = TestClient(app)
 
     response = client.get('/add/22')
     assert response.status_code == 200
-    assert response.text == '24'
+    assert response.text == '23'
 
     response = client.post('/sub/4')
     assert response.status_code == 200
-    assert response.text == '2'
+    assert response.text == '3'
 
 
 def test_routes_only_respond_to_method() -> None:
     app = FastAPI()
-    t = ExampleRoutableChildren(2)
-    app.include_router(t.router)
+    t = ExampleRoutableChildren1
+    app.include_router(t.routes())
 
     client = TestClient(app)
 
@@ -100,53 +101,53 @@ def test_routes_only_respond_to_method() -> None:
 
 def test_async_methods_work() -> None:
     app = FastAPI()
-    t = ExampleRoutableChildren(2)
-    app.include_router(t.router)
+    t = ExampleRoutableChildren1
+    app.include_router(t.routes())
 
     client = TestClient(app)
 
     response = client.get('/async')
     assert response.status_code == 200
-    assert response.text == '3'
+    assert response.text == '2'
 
     # Make sure we can call it more than once.
     response = client.get('/async')
     assert response.status_code == 200
-    assert response.text == '3'
+    assert response.text == '2'
 
 
 def test_async_methods_with_args_work() -> None:
     app = FastAPI()
-    t = ExampleRoutableChildren(2)
-    app.include_router(t.router)
+    t = ExampleRoutableChildren1
+    app.include_router(t.routes())
 
     client = TestClient(app)
 
     response = client.get('/aecho/hello')
     assert response.status_code == 200
-    assert response.text == 'hello 2'
+    assert response.text == 'hello 1'
 
 
 def test_routes_respond_parent() -> None:
     app = FastAPI()
-    t = ExampleRoutableParent(2)
-    app.include_router(t.router)
+    t = ExampleRoutableParent1
+    app.include_router(t.routes())
 
     client = TestClient(app)
 
     response = client.get('/add/22')
     assert response.status_code == 200
-    assert response.text == '24'
+    assert response.text == '23'
 
     response = client.post('/sub/4')
     assert response.status_code == 200
-    assert response.text == '2'
+    assert response.text == '3'
 
 
 def test_routes_only_respond_to_method_parent() -> None:
     app = FastAPI()
-    t = ExampleRoutableParent(2)
-    app.include_router(t.router)
+    t = ExampleRoutableParent1
+    app.include_router(t.routes())
 
     client = TestClient(app)
 
@@ -167,26 +168,26 @@ def test_routes_only_respond_to_method_parent() -> None:
 
 def test_async_methods_work_parent() -> None:
     app = FastAPI()
-    t = ExampleRoutableParent(2)
-    app.include_router(t.router)
+    t = ExampleRoutableParent1
+    app.include_router(t.routes())
 
     client = TestClient(app)
 
     response = client.get('/async')
     assert response.status_code == 200
-    assert response.text == '3'
+    assert response.text == '2'
 
     # Make sure we can call it more than once.
     response = client.get('/async')
     assert response.status_code == 200
-    assert response.text == '3'
+    assert response.text == '2'
 
 
 def test_async_methods_with_args_work_parent() -> None:
     app = FastAPI()
-    n = 10000
-    t = ExampleRoutableParent(n)
-    app.include_router(t.router)
+    n = 1
+    t = ExampleRoutableParent1
+    app.include_router(t.routes())
 
     client = TestClient(app)
 
@@ -197,9 +198,9 @@ def test_async_methods_with_args_work_parent() -> None:
 
 def test_override_method_work_parent() -> None:
     app = FastAPI()
-    n = 10000
-    t = ExampleRoutableParent(n)
-    app.include_router(t.router)
+    n = 1
+    t = ExampleRoutableParent1
+    app.include_router(t.routes())
 
     client = TestClient(app)
 
@@ -212,31 +213,33 @@ def test_override_method_work_parent() -> None:
 
 def test_base_template() -> None:
     app = FastAPI()
-    n = 10000
-    t = ExampleRoutableParent(n)
-    app.include_router(t.router)
+    n = 1
+    t = ExampleRoutableParent1
+    app.include_router(t.routes())
+
+    check_api_methods(app)
 
     client = TestClient(app)
 
     response = client.get('/get')
     assert response.status_code == 404
 
-    response = client.get('/test/example-routable-parent/v1.0/get')
+    response = client.get('/test/example-routable-parent1/v1.0/get')
     assert response.status_code == 200
-    assert response.text == '{}'.format(n + 100)
+    assert response.text == '{}'.format(n + 2)
 
-    response = client.get('/example-routable-parent/get')
+    response = client.get('/example-routable-parent1/get')
     assert response.status_code == 200
-    assert response.text == '{}'.format(n + 101)
+    assert response.text == '{}'.format(n + 2)
 
     response = client.get('/test/get')
     assert response.status_code == 200
-    assert response.text == '{}'.format(n + 102)
+    assert response.text == '{}'.format(n + 2)
 
-    response = client.get('/test/example-routable-parent/v1.0')
+    response = client.get('/test/example-routable-parent1/v1.0')
     assert response.status_code == 200
-    assert response.text == '{}'.format(n + 103)
+    assert response.text == '{}'.format(n + 2)
 
-    response = client.get('/1/get')
+    response = client.get('/test/1/get')
     assert response.status_code == 200
     assert response.text == '{}'.format(n + 1)

@@ -3,15 +3,16 @@ from typing import (Any, Callable, Dict, List, Optional, Sequence, Type,
                     Union, TypeVar)
 
 from fastapi import Response, params
-from fastapi.encoders import DictIntStrAny, SetIntStr
 from fastapi.datastructures import Default
+from fastapi.encoders import DictIntStrAny, SetIntStr
 from fastapi.responses import JSONResponse
-
 from starlette.routing import BaseRoute
 
 from .route_args import EndpointDefinition, RouteArgs
 
 AnyCallable = TypeVar('AnyCallable', bound=Callable[..., Any])
+
+CONTROLLER_METHOD_KEY = '__controller_method__'
 
 
 def route(path: str, methods: List[str], **kwargs: Any) -> Callable[[AnyCallable], AnyCallable]:
@@ -22,10 +23,17 @@ def route(path: str, methods: List[str], **kwargs: Any) -> Callable[[AnyCallable
     Most users will probably want to use the shorter decorators like @get, @post, @put, etc. so they don't have to pass
     the list of methods.
     """
-    def marker(method: AnyCallable) -> AnyCallable:
-        setattr(method, '_endpoint',
-                EndpointDefinition(endpoint=method, args=RouteArgs(path=path, methods=methods, **kwargs)))
+
+    def marker(method: AnyCallable, type_=None) -> AnyCallable:
+        setattr(
+            method, '_endpoint',
+            EndpointDefinition(endpoint=method, args=RouteArgs(path=path, methods=methods, **kwargs))
+        )
+        setattr(
+            method, CONTROLLER_METHOD_KEY, True
+        )
         return method
+
     return marker
 
 
@@ -54,6 +62,7 @@ def get(
         callbacks: Optional[List[BaseRoute]] = None,
         openapi_extra: Optional[Dict[str, Any]] = None,
         **kwargs: Any) -> Callable[[AnyCallable], AnyCallable]:
+    print(path)
     return route(
         path,
         methods=['GET'],
@@ -78,7 +87,7 @@ def get(
         name=name,
         callbacks=callbacks,
         openapi_extra=openapi_extra,
-        **kwargs,)
+        **kwargs, )
 
 
 def post(
@@ -130,7 +139,8 @@ def post(
         name=name,
         callbacks=callbacks,
         openapi_extra=openapi_extra,
-        **kwargs)
+        **kwargs
+    )
 
 
 def patch(
@@ -182,7 +192,8 @@ def patch(
         name=name,
         callbacks=callbacks,
         openapi_extra=openapi_extra,
-        **kwargs)
+        **kwargs
+    )
 
 
 def put(
@@ -234,7 +245,8 @@ def put(
         name=name,
         callbacks=callbacks,
         openapi_extra=openapi_extra,
-        **kwargs)
+        **kwargs
+    )
 
 
 def delete(
@@ -286,4 +298,5 @@ def delete(
         name=name,
         callbacks=callbacks,
         openapi_extra=openapi_extra,
-        **kwargs)
+        **kwargs
+    )

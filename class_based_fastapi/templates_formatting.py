@@ -11,7 +11,7 @@ def _rest_api_naming(name: str) -> str:
 
     Returns: Преобразованное название
     """
-    return snake_case(name)
+    return snake_case(name).replace('_', '-')
 
 
 def replace_parameter_template(endpoint: Dict[str, Any], mask_parameter: str, old_value: str, new_value: str) -> None:
@@ -77,6 +77,7 @@ def _replace_child_varsion_api(endpoint: Dict[str, Any],
         endpoint: Информация о методе
         name: Название текущего класса (контроллера)
         base: Тип унаследованного класса
+
     """
     new_name = attrs.get('VERSION_API')
     if new_name is None:
