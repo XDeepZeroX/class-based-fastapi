@@ -1,11 +1,11 @@
 from typing import Generic, TypeVar, List, Union
 
-import uvicorn as uvicorn
+import uvicorn
 from fastapi import FastAPI
 from fastapi.routing import APIRoute
 from sqlmodel import SQLModel
 
-from class_based_fastapi.decorators import post
+from class_based_fastapi.decorators import post, get
 from class_based_fastapi.routable import Routable
 from tests.utilities import check_api_methods
 
@@ -13,6 +13,8 @@ from tests.utilities import check_api_methods
 
 TReq = TypeVar('TReq')
 TRes = TypeVar('TRes')
+TReq1 = TypeVar('TReq1')
+TRes1 = TypeVar('TRes1')
 
 
 class BaseRequestBody(SQLModel):
@@ -34,6 +36,8 @@ class CloneBaseResponse(BaseResponse):
     param3: float
 
 
+# endregion
+# Controllers
 class BaseView_TestGeneric(Routable, Generic[TReq, TRes]):
     _injected = 1
 
@@ -41,13 +45,13 @@ class BaseView_TestGeneric(Routable, Generic[TReq, TRes]):
     def add(self, x: TReq) -> TRes:
         return BaseResponse(param1=999, param2='test')
 
+    @get(path='')
+    def list(self) -> List[TRes]:
+        return list()
+
 
 class ExampleRoutableParent_TestGeneric(BaseView_TestGeneric[BaseRequestBody, BaseResponse]):
     NAME_MODULE = 'Test'
-
-
-TReq1 = TypeVar('TReq1')
-TRes1 = TypeVar('TRes1')
 
 
 class BaseViewParent_TestGeneric(BaseView_TestGeneric[TReq1, TRes1], Generic[TReq1, TRes1]):

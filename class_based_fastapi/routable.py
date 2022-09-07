@@ -9,9 +9,11 @@ from fastapi import Depends, APIRouter
 from pydantic.typing import is_classvar
 
 from class_based_fastapi.decorators import CONTROLLER_METHOD_KEY
+from class_based_fastapi.defaults import GENERIC_ATTRIBUTES, CLASS_TYPE, API_METHODS, INIT_MODIFIED, \
+    SIGNATURE_KEY, TAGGING_KEY
+from class_based_fastapi.route_args import RouteArgs
 from class_based_fastapi.templates_formatting import _rest_api_naming
-from class_based_fastapi.utilities import deepcopy_func, GENERIC_ATTRIBUTES, CLASS_TYPE, API_METHODS, INIT_MODIFIED, \
-    SIGNATURE_KEY
+from class_based_fastapi.utilities import deepcopy_func
 
 AnyCallable = TypeVar('AnyCallable', bound=Callable[..., Any])
 
@@ -182,6 +184,14 @@ class RoutableMeta(type):
         return func_
 
     @staticmethod
+    def compute_tags_route(args: RouteArgs, cls: Type[type]):
+        if not getattr(cls, TAGGING_KEY, False): return
+
+        args.tags = (args.tags or [])
+        if args.tags == []:
+            args.tags = (getattr(cls, 'TAGS', None) or [cls.__name__])
+
+    @staticmethod
     def get_router(cls: Type[type]) -> APIRouter:
         """Формирование функции возвращающей маршруты API
 
@@ -220,6 +230,7 @@ class RoutableMeta(type):
             setattr(endpoint, SIGNATURE_KEY, new_signature)
 
             args = config_methods[endpoint.__name__] if endpoint.__name__ in config_methods else endpoint._endpoint.args
+            RoutableMeta.compute_tags_route(args, cls)
             router.add_api_route(
                 endpoint=endpoint,
                 **dataclasses.asdict(args)
@@ -306,3 +317,7 @@ class Routable(metaclass=RoutableMeta):
     NAME_MODULE = ''
 
     BASE_TEMPLATE_PATH = '/{module}/{controller}/v{version}/{user_path}'
+
+    # Тегирование маршрутов API
+    TAGS = None
+    TAGGING = True

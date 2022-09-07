@@ -5,18 +5,11 @@ import types
 import typing
 from functools import partial
 
+from class_based_fastapi.defaults import GENERIC_ATTRIBUTES
 from class_based_fastapi.route_args import RouteArgs
 
 _snake_1 = partial(re.compile(r'(.)((?<![^A-Za-z])[A-Z][a-z]+)').sub, r'\1$*-$%\2')
 _snake_2 = partial(re.compile(r'([a-z0-9])([A-Z])').sub, r'\1$*-$%\2')
-
-CBV_CLASS_KEY = "__cbv_class__"
-CLASS_TYPE = "__cbv_class__"
-
-SIGNATURE_KEY = "__signature__"
-API_METHODS = "__api_methods__"
-INIT_MODIFIED = "__init_modified__"
-GENERIC_ATTRIBUTES = "__generic_attribute__"
 
 
 def snake_case(string: str, separator: str = '-') -> str:
