@@ -1,24 +1,19 @@
 import copy
 import dataclasses
 import inspect
+import typing
 from collections import defaultdict
 from typing import Any, Callable, Dict, List, Tuple, Type, TypeVar, cast, get_type_hints
 
 from fastapi import Depends, APIRouter
 from pydantic.typing import is_classvar
 
-from .decorators import CONTROLLER_METHOD_KEY
-from .templates_formatting import _rest_api_naming
-from .utilities import deepcopy_func
+from class_based_fastapi.decorators import CONTROLLER_METHOD_KEY
+from class_based_fastapi.templates_formatting import _rest_api_naming
+from class_based_fastapi.utilities import deepcopy_func, GENERIC_ATTRIBUTES, CLASS_TYPE, API_METHODS, INIT_MODIFIED, \
+    SIGNATURE_KEY
 
 AnyCallable = TypeVar('AnyCallable', bound=Callable[..., Any])
-
-CBV_CLASS_KEY = "__cbv_class__"
-CLASS_TYPE = "__cbv_class__"
-
-SIGNATURE_KEY = "__signature__"
-API_METHODS = "__api_methods__"
-INIT_MODIFIED = "__init_modified__"
 
 
 class RoutableMeta(type):
@@ -151,10 +146,10 @@ class RoutableMeta(type):
 
        Returns: Сформированный метод API
        """
-        func_ = deepcopy_func(func)
 
         config_methods = getattr(cls, API_METHODS)
-        args = config_methods[func_.__name__] if func_.__name__ in config_methods else func_._endpoint.args
+        args = config_methods[func.__name__] if func.__name__ in config_methods else copy.deepcopy(func._endpoint.args)
+        func_ = deepcopy_func(func, args, cls)
         user_path = args.path
         base_template = cls.BASE_TEMPLATE_PATH
         if not str.startswith(user_path, '/'):
@@ -231,6 +226,49 @@ class RoutableMeta(type):
             )
         return router
 
+    @staticmethod
+    def init_generic_params(cls):
+        if not hasattr(cls, '__orig_bases__'):
+            return
+        bases = cls.__orig_bases__
+        generics = list(
+            filter(
+                lambda x: isinstance(x, typing._GenericAlias) and getattr(x, '__origin__', None) in {typing.Generic},
+                bases
+            )
+        )
+        if len(generics) != 0:
+            generic = generics[0]
+
+            generic_attrs = list(
+                map(
+                    lambda x: {
+                        'name': x.__name__,
+                        'type': None,
+                        'class': cls
+                    },
+                    generic.__args__
+                )
+            )
+            setattr(cls, GENERIC_ATTRIBUTES, generic_attrs)
+
+        generics = list(
+            filter(
+                lambda x: isinstance(x, typing._GenericAlias) and not (
+                        getattr(x, '__origin__', None) in {typing.Generic}),
+                bases
+            )
+        )
+        for generic in generics:
+            generic_attrs = copy.deepcopy(
+                getattr(RoutableMeta.get_type_instance(cls, generic.__name__), GENERIC_ATTRIBUTES)
+            )
+            for i in range(len(generic_attrs)):
+                generic_attrs[i]['type'] = generic.__args__[i]
+            setattr(cls, GENERIC_ATTRIBUTES, generic_attrs)
+
+        print(bases)
+
     def __new__(cls: Type[type], name: str, bases: Tuple[Type[Any]], attrs: Dict[str, Any]) -> 'RoutableMeta':
         RoutableMeta.__new_instance__(cls, name, bases, attrs)
         cls_ = RoutableMeta.get_type_instance(cls, name)
@@ -245,6 +283,11 @@ class RoutableMeta(type):
 
         # RoutableMeta.signature(cls, name, bases, attrs)
         if cls_ is not None:
+            try:
+                prm = cls_.__parameters__[0]
+            except Exception as ex:
+                pass
+            RoutableMeta.init_generic_params(cls_)
             RoutableMeta._init_cbv(cls_)
 
         return cast(RoutableMeta, type.__new__(cls, name, bases, attrs))
