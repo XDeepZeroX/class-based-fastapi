@@ -2,8 +2,8 @@ import copy
 import inspect
 import re
 import types
-import typing
 from functools import partial
+from typing import List, TypeVar, Union
 
 from class_based_fastapi.defaults import GENERIC_ATTRIBUTES
 from class_based_fastapi.route_args import RouteArgs
@@ -20,13 +20,34 @@ def snake_case(string: str, separator: str = '-') -> str:
     return case
 
 
-def _get_response_type(annotation: type, attrs: typing.List[dict]) -> type:
-    if isinstance(annotation, typing.TypeVar):
-        type_from_generic = list(filter(lambda x: x['name'] == annotation.__name__, attrs))
-        if len(type_from_generic) > 1 or len(type_from_generic) == 0:
-            raise Exception
-        if type_from_generic[0]['type'] is not None:
-            annotation = type_from_generic[0]['type']
+def find_type_from_getneric(name_param: str, generics: List[dict], raise_exception=True) -> Union[dict, None]:
+    type_from_generic = list(filter(lambda x: x['name'] == name_param, generics))
+    if len(type_from_generic) > 1 or len(type_from_generic) == 0:
+        if raise_exception:
+            raise Exception(f'Found -> {len(type_from_generic)} <- generic params')
+        return None
+    return type_from_generic[0]
+
+
+def _get_response_type(annotation: type, attrs: List[dict]) -> type:
+    if isinstance(annotation, TypeVar):
+        # type_from_generic = list(filter(lambda x: x['name'] == annotation.__name__, attrs))
+        # if len(type_from_generic) > 1 or len(type_from_generic) == 0:
+        #     raise Exception
+        type_from_generic = find_type_from_getneric(annotation.__name__, attrs)
+        if type_from_generic['type'] is not None:
+            annotation = type_from_generic['type']
+    elif hasattr(annotation, '__origin__'):
+        params = []
+        for arg in annotation.__args__:
+            type_from_generic = find_type_from_getneric(arg.__name__, attrs, raise_exception=False)
+            if type_from_generic is not None and type_from_generic['type'] is not None:
+                params.append(type_from_generic['type'])
+            else:
+                params.append(arg)
+
+        annotation = annotation.__origin__[tuple(params)]
+
     return annotation
 
 
@@ -42,7 +63,7 @@ def deepcopy_func(f, args: RouteArgs, cls, name=None):
     for name_param, param in new_signature.parameters.items():
         if name_param in params:
             annotation = _get_response_type(params[name_param].annotation, generics)
-            # if isinstance(annotation, typing.TypeVar):
+            # if isinstance(annotation, TypeVar):
             #     type_from_generic = list(filter(lambda x: x['name'] == annotation.__name__, generics))
             #     if len(type_from_generic) > 1 or len(type_from_generic) == 0:
             #         raise Exception
