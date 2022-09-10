@@ -1,0 +1,58 @@
+site_name: FastAPI Class Based
+site_description: FastAPI Class Based
+site_url: https://xdeepzerox.github.io/class-based-fastapi
+
+theme:
+  name: 'material'
+  palette:
+    # Palette toggle for light mode
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    # Palette toggle for dark mode
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+  logo: 'img/favicon.png'
+  favicon: 'img/icon.png'
+
+repo_name: XDeepZeroX/class-based-fastapi
+repo_url: https://github.com/XDeepZeroX/class-based-fastapi
+
+nav:
+  - FastAPI Class Based: 'index.md'
+  - User Guide:
+      - guides/install.md
+      - guides/first_steps.md
+      - guides/generics.md
+  - Get Help: 'get_help.md'
+  - Development - Contributing: 'development_contributing.md'
+  - Release Notes: 'release_notes.md'
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - markdown.extensions.codehilite:
+      guess_lang: false
+  - markdown_include.include:
+      base_path: docs
+  - admonition
+  - codehilite
+  - extra
+  - tables
+  - smarty
+
+plugins:
+  - glightbox
+
+extra:
+  social:
+    - icon: fontawesome/brands/github-alt
+      link: https://github.com/XDeepZeroX/class-based-fastapi
+
+extra_css:
+  - css/custom.css
+  - css/pygments.css

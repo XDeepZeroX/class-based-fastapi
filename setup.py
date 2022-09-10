@@ -44,7 +44,12 @@ setup(
     install_requires=load_requirements('requirements.txt'),
     extras_require={
         'dev': load_requirements('requirements.dev.txt'),
-        'test': load_requirements('requirements.test.txt')
+        'docs': load_requirements('requirements.docs.txt'),
+        'test': load_requirements('requirements.test.txt'),
+        'all': load_requirements('requirements.txt') +
+               load_requirements('requirements.dev.txt') +
+               load_requirements('requirements.docs.txt') +
+               load_requirements('requirements.test.txt'),
     },
     # entry_points={
     #     'console_scripts': [
