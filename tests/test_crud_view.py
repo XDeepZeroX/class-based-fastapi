@@ -46,8 +46,7 @@ def requests_(client, status: int, module: str, controller: str, version: str = 
 def test_inheritance_routes_children() -> None:
     app = FastAPI()
     n = 1
-    t = ExampleRoutableChildren
-    app.include_router(t.routes())
+    app.include_router(ExampleRoutableChildren.routes())
 
     check_api_methods(app)
 

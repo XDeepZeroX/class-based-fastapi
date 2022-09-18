@@ -272,7 +272,7 @@ class RoutableMeta(type):
         )
         for generic in generics:
             generic_attrs = copy.deepcopy(
-                getattr(RoutableMeta.get_type_instance(cls, generic.__name__), GENERIC_ATTRIBUTES)
+                getattr(RoutableMeta.get_type_instance(cls, generic.__name__ if hasattr(generic, '__name__') else generic.__origin__.__name__), GENERIC_ATTRIBUTES)
             )
             for i in range(len(generic_attrs)):
                 generic_attrs[i]['type'] = generic.__args__[i]

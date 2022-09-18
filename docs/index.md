@@ -49,6 +49,15 @@ This package is intended for use with any recent version of FastAPI (depending o
 pip install class-based-fastapi
 ```
 
+## Example
+
+
+```python hl_lines=""
+{!./src/generics/crud_books.py!}
+```
+
+![Class base API OpenAPI Docs](img/generics/Class_based_API.png)
+
 [Next steps >>>](guides/install.md)
 
 ## License

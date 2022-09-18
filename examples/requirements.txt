@@ -1,0 +1,6 @@
+psycopg2>=2.9.3
+sqlmodel>=0.0.6
+uvicorn>=0.18.3
+alembic>=1.8.1
+fastapi>=0.82.0
+class-based-fastapi>=1.0.2
