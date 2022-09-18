@@ -13,7 +13,7 @@ from models.models import Category, CategoryPUT, Book, BookPUT
 
 app = FastAPI(debug=True)
 
-engine = create_engine('postgresql://postgres:672412Aa@localhost:5432/fastapi_example', echo=True)
+engine = create_engine('postgresql://postgres:123456@localhost:5432/fastapi_example', echo=True)
 
 
 @app.on_event("startup")

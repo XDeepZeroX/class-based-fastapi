@@ -15,11 +15,12 @@ def load_requirements(fname: str) -> list:
 
 setup(
     name='class-based-fastapi',
-    version='1.0.2',
+    version='1.0.3',
     author='XDeepZeroX',
     license='MIT',
     description='Class based routing for FastAPI',
     long_description=open('README.md').read(),
+    long_description_content_type="text/markdown",
     url='https://github.com/XDeepZeroX/class-based-fastapi',
     platforms='all',
     keywords=["FastAPI", "Class", "Instance", "Routing"],

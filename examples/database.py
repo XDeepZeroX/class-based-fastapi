@@ -3,7 +3,7 @@ from sqlmodel import Session, create_engine
 from alembic import command
 from alembic.config import Config
 
-engine = create_engine('postgresql://postgres:672412Aa@localhost:5432/fastapi_example', echo=True, future=True)
+engine = create_engine('postgresql://postgres:123456@localhost:5432/fastapi_example', echo=True, future=True)
 
 alembic_cfg = Config('alembic.ini')
 alembic_cfg.set_main_option('script_location', 'alembic')

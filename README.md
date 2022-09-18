@@ -144,7 +144,7 @@ if __name__ == "__main__":
 
 ```
 
-![Class base API OpenAPI Docs](docs/img/generics/Class_based_API.png)
+![Class base API OpenAPI Docs](https://github.com/XDeepZeroX/class-based-fastapi/raw/main/docs/img/generics/Class_based_API.png)
 
 [Next steps >>>](https://XDeepZeroX.github.io/class-based-fastapi)
 
