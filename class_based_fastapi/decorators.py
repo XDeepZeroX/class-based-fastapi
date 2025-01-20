@@ -1,10 +1,9 @@
 from enum import Enum
 from typing import (Any, Callable, Dict, List, Optional, Sequence, Type,
-                    Union, TypeVar)
+                    Union, TypeVar, Set)
 
 from fastapi import Response, params
 from fastapi.datastructures import Default
-from fastapi.encoders import DictIntStrAny, SetIntStr
 from fastapi.responses import JSONResponse
 from starlette.routing import BaseRoute
 
@@ -14,6 +13,8 @@ AnyCallable = TypeVar('AnyCallable', bound=Callable[..., Any])
 
 CONTROLLER_METHOD_KEY = '__controller_method__'
 
+SetIntStr = Set[Union[int, str]]
+DictIntStrAny = Dict[Union[int, str], Any]
 
 def route(path: str, methods: List[str], **kwargs: Any) -> Callable[[AnyCallable], AnyCallable]:
     """General purpose route definition. Requires you to pass an array of HTTP methods like GET, POST, PUT, etc.
