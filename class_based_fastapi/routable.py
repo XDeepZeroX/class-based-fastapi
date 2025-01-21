@@ -3,19 +3,39 @@ import dataclasses
 import inspect
 import typing
 from collections import defaultdict
-from typing import Any, Callable, Dict, List, Tuple, Type, TypeVar, cast, get_type_hints
+from typing import (
+    Any,
+    Callable,
+    ClassVar,
+    Dict,
+    List,
+    Tuple,
+    Type,
+    TypeVar,
+    cast,
+    get_type_hints,
+)
 
-from fastapi import Depends, APIRouter
-from pydantic.typing import is_classvar
+from fastapi import APIRouter, Depends
 
 from class_based_fastapi.decorators import CONTROLLER_METHOD_KEY
-from class_based_fastapi.defaults import GENERIC_ATTRIBUTES, CLASS_TYPE, API_METHODS, INIT_MODIFIED, \
-    SIGNATURE_KEY, TAGGING_KEY
+from class_based_fastapi.defaults import (
+    API_METHODS,
+    CLASS_TYPE,
+    GENERIC_ATTRIBUTES,
+    INIT_MODIFIED,
+    SIGNATURE_KEY,
+    TAGGING_KEY,
+)
 from class_based_fastapi.route_args import RouteArgs
 from class_based_fastapi.templates_formatting import _rest_api_naming
 from class_based_fastapi.utilities import deepcopy_func
 
-AnyCallable = TypeVar('AnyCallable', bound=Callable[..., Any])
+AnyCallable = TypeVar("AnyCallable", bound=Callable[..., Any])
+
+
+def is_classvar(hint):
+    return getattr(hint, "__origin__", None) is ClassVar
 
 
 class RoutableMeta(type):
@@ -26,7 +46,9 @@ class RoutableMeta(type):
     __inheritors_set__ = set()
 
     @staticmethod
-    def get_config_endpoints(bases: Tuple[Type[Any]], attrs: Dict[str, Any]) -> Dict[str, Any]:
+    def get_config_endpoints(
+        bases: Tuple[Type[Any]], attrs: Dict[str, Any]
+    ) -> Dict[str, Any]:
         """Получение конфигурации всех методов API
 
         Args:
@@ -40,7 +62,9 @@ class RoutableMeta(type):
         if cls_ is None:
             return {}
 
-        new_methods = list(filter(lambda x: hasattr(x[1], CONTROLLER_METHOD_KEY), attrs.items()))
+        new_methods = list(
+            filter(lambda x: hasattr(x[1], CONTROLLER_METHOD_KEY), attrs.items())
+        )
         old_methods = attrs.get(API_METHODS, dict())
         if not len(old_methods) and len(bases):
             old_methods = {}
@@ -71,18 +95,28 @@ class RoutableMeta(type):
         if getattr(old_init, INIT_MODIFIED, False):
             return
         old_signature = inspect.signature(old_init)
-        old_parameters = list(old_signature.parameters.values())[1:]  # drop `self` parameter
+        old_parameters = list(old_signature.parameters.values())[
+            1:
+        ]  # drop `self` parameter
         new_parameters = [
-            x for x in old_parameters if x.kind not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
+            x
+            for x in old_parameters
+            if x.kind
+            not in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD)
         ]
         dependency_names: List[str] = []
         for name, hint in get_type_hints(cls).items():
-            if is_classvar(hint) or name == '_endpoints':
+            if is_classvar(hint) or name == "_endpoints":
                 continue
             parameter_kwargs = {"default": getattr(cls, name, Ellipsis)}
             dependency_names.append(name)
             new_parameters.append(
-                inspect.Parameter(name=name, kind=inspect.Parameter.KEYWORD_ONLY, annotation=hint, **parameter_kwargs)
+                inspect.Parameter(
+                    name=name,
+                    kind=inspect.Parameter.KEYWORD_ONLY,
+                    annotation=hint,
+                    **parameter_kwargs,
+                )
             )
         new_signature = old_signature.replace(parameters=new_parameters)
 
@@ -105,7 +139,9 @@ class RoutableMeta(type):
         # attrs[CBV_CLASS_KEY] = True
 
     @staticmethod
-    def __new_instance__(cls: Type[type], name: str, bases: Tuple[Type[Any]], attrs: Dict[str, Any]) -> 'RoutableMeta':
+    def __new_instance__(
+        cls: Type[type], name: str, bases: Tuple[Type[Any]], attrs: Dict[str, Any]
+    ) -> "RoutableMeta":
         """Создание нового типа и запоминание родительских типов
 
         Args:
@@ -142,27 +178,31 @@ class RoutableMeta(type):
     def _compute_path_new(cls: Type[type], func: Callable) -> Callable:
         """Формирование шаблона URI
 
-       Args:
-           cls: Тип класса
-           func: Метод API
+        Args:
+            cls: Тип класса
+            func: Метод API
 
-       Returns: Сформированный метод API
-       """
+        Returns: Сформированный метод API
+        """
 
         config_methods = getattr(cls, API_METHODS)
-        args = config_methods[func.__name__] if func.__name__ in config_methods else copy.deepcopy(func._endpoint.args)
+        args = (
+            config_methods[func.__name__]
+            if func.__name__ in config_methods
+            else copy.deepcopy(func._endpoint.args)
+        )
         func_ = deepcopy_func(func, args, cls)
         user_path = args.path
         base_template = cls.BASE_TEMPLATE_PATH
-        if not str.startswith(user_path, '/'):
-            user_path = base_template.replace('{user_path}', user_path)
+        if not str.startswith(user_path, "/"):
+            user_path = base_template.replace("{user_path}", user_path)
 
         name_module = cls.NAME_MODULE
-        if '{module}' in user_path and (name_module is None or name_module == ''):
-            user_path = user_path.replace('/{module}', '')
+        if "{module}" in user_path and (name_module is None or name_module == ""):
+            user_path = user_path.replace("/{module}", "")
 
         # Template
-        if str.endswith(user_path, '/'):
+        if str.endswith(user_path, "/"):
             user_path = user_path[:-1]
         args.template_path = user_path
 
@@ -175,21 +215,23 @@ class RoutableMeta(type):
         args.varsion_api = varsion_api
 
         # Replacement
-        path = user_path \
-            .replace('{module}', name_module) \
-            .replace('{version}', varsion_api) \
-            .replace('{controller}', _rest_api_naming(cls.__name__))
+        path = (
+            user_path.replace("{module}", name_module)
+            .replace("{version}", varsion_api)
+            .replace("{controller}", _rest_api_naming(cls.__name__))
+        )
         args.path = path
         # print(f'{args.methods}: {path}')
         return func_
 
     @staticmethod
     def compute_tags_route(args: RouteArgs, cls: Type[type]):
-        if not getattr(cls, TAGGING_KEY, False): return
+        if not getattr(cls, TAGGING_KEY, False):
+            return
 
-        args.tags = (args.tags or [])
+        args.tags = args.tags or []
         if args.tags == []:
-            args.tags = (getattr(cls, 'TAGS', None) or [cls.__name__])
+            args.tags = getattr(cls, "TAGS", None) or [cls.__name__]
 
     @staticmethod
     def get_router(cls: Type[type]) -> APIRouter:
@@ -229,23 +271,25 @@ class RoutableMeta(type):
             new_signature = signature.replace(parameters=new_parameters)
             setattr(endpoint, SIGNATURE_KEY, new_signature)
 
-            args = config_methods[endpoint.__name__] if endpoint.__name__ in config_methods else endpoint._endpoint.args
-            RoutableMeta.compute_tags_route(args, cls)
-            router.add_api_route(
-                endpoint=endpoint,
-                **dataclasses.asdict(args)
+            args = (
+                config_methods[endpoint.__name__]
+                if endpoint.__name__ in config_methods
+                else endpoint._endpoint.args
             )
+            RoutableMeta.compute_tags_route(args, cls)
+            router.add_api_route(endpoint=endpoint, **dataclasses.asdict(args))
         return router
 
     @staticmethod
     def init_generic_params(cls):
-        if not hasattr(cls, '__orig_bases__'):
+        if not hasattr(cls, "__orig_bases__"):
             return
         bases = cls.__orig_bases__
         generics = list(
             filter(
-                lambda x: isinstance(x, typing._GenericAlias) and getattr(x, '__origin__', None) in {typing.Generic},
-                bases
+                lambda x: isinstance(x, typing._GenericAlias)
+                and getattr(x, "__origin__", None) in {typing.Generic},
+                bases,
             )
         )
         if len(generics) != 0:
@@ -253,34 +297,40 @@ class RoutableMeta(type):
 
             generic_attrs = list(
                 map(
-                    lambda x: {
-                        'name': x.__name__,
-                        'type': None,
-                        'class': cls
-                    },
-                    generic.__args__
+                    lambda x: {"name": x.__name__, "type": None, "class": cls},
+                    generic.__args__,
                 )
             )
             setattr(cls, GENERIC_ATTRIBUTES, generic_attrs)
 
         generics = list(
             filter(
-                lambda x: isinstance(x, typing._GenericAlias) and not (
-                        getattr(x, '__origin__', None) in {typing.Generic}),
-                bases
+                lambda x: isinstance(x, typing._GenericAlias)
+                and getattr(x, "__origin__", None) not in {typing.Generic},
+                bases,
             )
         )
         for generic in generics:
             generic_attrs = copy.deepcopy(
-                getattr(RoutableMeta.get_type_instance(cls, generic.__name__ if hasattr(generic, '__name__') else generic.__origin__.__name__), GENERIC_ATTRIBUTES)
+                getattr(
+                    RoutableMeta.get_type_instance(
+                        cls,
+                        generic.__name__
+                        if hasattr(generic, "__name__")
+                        else generic.__origin__.__name__,
+                    ),
+                    GENERIC_ATTRIBUTES,
+                )
             )
             for i in range(len(generic_attrs)):
-                generic_attrs[i]['type'] = generic.__args__[i]
+                generic_attrs[i]["type"] = generic.__args__[i]
             setattr(cls, GENERIC_ATTRIBUTES, generic_attrs)
 
         print(bases)
 
-    def __new__(cls: Type[type], name: str, bases: Tuple[Type[Any]], attrs: Dict[str, Any]) -> 'RoutableMeta':
+    def __new__(
+        cls: Type[type], name: str, bases: Tuple[Type[Any]], attrs: Dict[str, Any]
+    ) -> "RoutableMeta":
         RoutableMeta.__new_instance__(cls, name, bases, attrs)
         cls_ = RoutableMeta.get_type_instance(cls, name)
         attrs[CLASS_TYPE] = cls_
@@ -290,13 +340,15 @@ class RoutableMeta(type):
             setattr(cls_, API_METHODS, methods)
             attrs[API_METHODS] = methods
 
-        attrs['routes'] = lambda: RoutableMeta.get_router(RoutableMeta.get_type_instance(cls, name))
+        attrs["routes"] = lambda: RoutableMeta.get_router(
+            RoutableMeta.get_type_instance(cls, name)
+        )
 
         # RoutableMeta.signature(cls, name, bases, attrs)
         if cls_ is not None:
             try:
                 prm = cls_.__parameters__[0]
-            except Exception as ex:
+            except Exception:
                 pass
             RoutableMeta.init_generic_params(cls_)
             RoutableMeta._init_cbv(cls_)
@@ -312,11 +364,12 @@ class Routable(metaclass=RoutableMeta):
     the _endpoints class method during class creation. The constructor constructs an APIRouter and adds all the routes
     in the _endpoints to it so they can be added to an app via FastAPI.include_router or similar.
     """
-    # _endpoints: List[EndpointDefinition] = []
-    VERSION_API = '1.0'
-    NAME_MODULE = ''
 
-    BASE_TEMPLATE_PATH = '/{module}/{controller}/v{version}/{user_path}'
+    # _endpoints: List[EndpointDefinition] = []
+    VERSION_API = "1.0"
+    NAME_MODULE = ""
+
+    BASE_TEMPLATE_PATH = "/{module}/{controller}/v{version}/{user_path}"
 
     # Тегирование маршрутов API
     TAGS = None
