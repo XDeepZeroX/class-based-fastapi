@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+         <loc>https://xdeepzerox.github.io/class-based-fastapi/</loc>
+         <lastmod>2025-01-22</lastmod>
+    </url>
+    <url>
+         <loc>https://xdeepzerox.github.io/class-based-fastapi/development_contributing/</loc>
+         <lastmod>2025-01-22</lastmod>
+    </url>
+    <url>
+         <loc>https://xdeepzerox.github.io/class-based-fastapi/get_help/</loc>
+         <lastmod>2025-01-22</lastmod>
+    </url>
+    <url>
+         <loc>https://xdeepzerox.github.io/class-based-fastapi/release_notes/</loc>
+         <lastmod>2025-01-22</lastmod>
+    </url>
+    <url>
+         <loc>https://xdeepzerox.github.io/class-based-fastapi/guides/first_steps/</loc>
+         <lastmod>2025-01-22</lastmod>
+    </url>
+    <url>
+         <loc>https://xdeepzerox.github.io/class-based-fastapi/guides/generics/</loc>
+         <lastmod>2025-01-22</lastmod>
+    </url>
+    <url>
+         <loc>https://xdeepzerox.github.io/class-based-fastapi/guides/install/</loc>
+         <lastmod>2025-01-22</lastmod>
+    </url>
+</urlset>
